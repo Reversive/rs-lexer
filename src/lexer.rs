@@ -51,7 +51,7 @@ impl<'a> Lexer<'a> {
         true
     }
 
-    fn add_token_conditionally(
+    fn evaluate_compound_token(
         &mut self,
         expected: char,
         compound_type: TokenType,
@@ -63,6 +63,13 @@ impl<'a> Lexer<'a> {
             single_type
         };
         self.add_token(token_type);
+    }
+
+    fn peek(&self) -> char {
+        if self.is_at_eof() {
+            return '\0';
+        }
+        self.source.chars().nth(self.current_lexeme_offset).unwrap()
     }
 
     fn scan_token(&mut self) {
@@ -78,10 +85,21 @@ impl<'a> Lexer<'a> {
             '+' => self.add_token(TokenType::Plus),
             ';' => self.add_token(TokenType::Semicolon),
             '*' => self.add_token(TokenType::Star),
-            '!' => self.add_token_conditionally('=', TokenType::BangEqual, TokenType::Bang),
-            '=' => self.add_token_conditionally('=', TokenType::EqualEqual, TokenType::Equal),
-            '<' => self.add_token_conditionally('=', TokenType::LessEqual, TokenType::Less),
-            '>' => self.add_token_conditionally('=', TokenType::GreaterEqual, TokenType::Greater),
+            '!' => self.evaluate_compound_token('=', TokenType::BangEqual, TokenType::Bang),
+            '=' => self.evaluate_compound_token('=', TokenType::EqualEqual, TokenType::Equal),
+            '<' => self.evaluate_compound_token('=', TokenType::LessEqual, TokenType::Less),
+            '>' => self.evaluate_compound_token('=', TokenType::GreaterEqual, TokenType::Greater),
+            '/' => {
+                if self.inmediate_next_match('/') {
+                    while self.peek() != '\n' && !self.is_at_eof() {
+                        self.next_char();
+                    }
+                } else {
+                    self.add_token(TokenType::Slash);
+                }
+            }
+            '\n' => self.line += 1,
+            ' ' | '\r' | 't' => (),
             _ => println!("Unsupported character at line {}.", self.line),
         }
     }
@@ -92,7 +110,8 @@ impl<'a> Lexer<'a> {
             self.scan_token();
         }
 
-        self.tokens.push(Token::new(TokenType::EOF, "", self.line));
+        self.tokens
+            .push(Token::new(TokenType::EOF, "\0", self.line));
         return &self.tokens;
     }
 }
