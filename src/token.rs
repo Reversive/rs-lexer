@@ -24,10 +24,17 @@ pub enum TokenType {
     EOF,
 }
 
+pub enum Literal<'a> {
+    S(&'a str),
+    N(u32),
+    F(f32),
+}
+
 pub struct Token<'a> {
     token_type: TokenType,
     lexeme: &'a str,
     line: usize,
+    literal: Literal<'a>,
 }
 
 impl<'a> Token<'a> {
@@ -36,6 +43,21 @@ impl<'a> Token<'a> {
             token_type,
             lexeme,
             line,
+            literal: Literal::N(0),
+        }
+    }
+
+    pub fn new_literal(
+        token_type: TokenType,
+        lexeme: &'a str,
+        line: usize,
+        literal: Literal<'a>,
+    ) -> Self {
+        Token {
+            token_type,
+            lexeme,
+            line,
+            literal,
         }
     }
 
@@ -49,5 +71,9 @@ impl<'a> Token<'a> {
 
     pub fn line(&self) -> usize {
         self.line
+    }
+
+    pub fn literal(&self) -> &Literal {
+        &self.literal
     }
 }

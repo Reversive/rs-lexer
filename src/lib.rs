@@ -5,6 +5,7 @@ mod token;
 mod tests {
     use super::*;
     use lexer::Lexer;
+    use token::Literal;
 
     #[test]
     fn token_quantity() {
@@ -48,5 +49,17 @@ mod tests {
         let mut lexer = Lexer::new(&source);
         let tokens = lexer.scan_tokens();
         assert_eq!(tokens.get(0).unwrap().lexeme(), "\0");
+    }
+
+    #[test]
+    fn check_string() {
+        let source = String::from(r#""string""#);
+        let mut lexer = Lexer::new(&source);
+        let tokens = lexer.scan_tokens();
+        let s = match tokens.get(0).unwrap().literal() {
+            Literal::S(s) => s,
+            _ => "unreachable",
+        };
+        assert_eq!(s, "string");
     }
 }

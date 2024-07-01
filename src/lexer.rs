@@ -1,3 +1,4 @@
+use crate::token::Literal;
 use crate::token::Token;
 use crate::token::TokenType;
 
@@ -38,6 +39,15 @@ impl<'a> Lexer<'a> {
         ));
     }
 
+    fn add_token_literal(&mut self, token_type: TokenType, literal: Literal<'a>) {
+        self.tokens.push(Token::new_literal(
+            token_type,
+            &self.source[self.start_lexeme_offset..self.current_lexeme_offset],
+            self.line,
+            literal,
+        ));
+    }
+
     fn inmediate_next_match(&mut self, expected: char) -> bool {
         if self.is_at_eof() {
             return false;
@@ -72,6 +82,25 @@ impl<'a> Lexer<'a> {
         self.source.chars().nth(self.current_lexeme_offset).unwrap()
     }
 
+    fn scan_string(&mut self) {
+        while self.peek() != '"' && !self.is_at_eof() {
+            if self.peek() == '\n' {
+                self.line += 1
+            };
+            self.next_char();
+        }
+
+        if self.is_at_eof() {
+            println!("Unterminated string at line {}", self.line);
+            return;
+        }
+        self.next_char();
+        self.add_token_literal(
+            TokenType::String,
+            Literal::S(&self.source[self.start_lexeme_offset + 1..self.current_lexeme_offset - 1]),
+        );
+    }
+
     fn scan_token(&mut self) {
         let current_char = self.next_char();
         match current_char {
@@ -85,6 +114,7 @@ impl<'a> Lexer<'a> {
             '+' => self.add_token(TokenType::Plus),
             ';' => self.add_token(TokenType::Semicolon),
             '*' => self.add_token(TokenType::Star),
+            '"' => self.scan_string(),
             '!' => self.evaluate_compound_token('=', TokenType::BangEqual, TokenType::Bang),
             '=' => self.evaluate_compound_token('=', TokenType::EqualEqual, TokenType::Equal),
             '<' => self.evaluate_compound_token('=', TokenType::LessEqual, TokenType::Less),
